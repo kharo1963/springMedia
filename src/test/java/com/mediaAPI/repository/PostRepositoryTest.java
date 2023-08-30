@@ -1,15 +1,19 @@
 package com.mediaAPI.repository;
 
 import com.mediaAPI.model.Post;
+import com.mediaAPI.token.TokenRepository;
 import com.mediaAPI.user.User;
 import com.mediaAPI.user.Role;
+import com.mediaAPI.user.UserRepository;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
-import java.util.Base64;
+import java.time.LocalDateTime;
+import java.time.Month;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -17,6 +21,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 public class PostRepositoryTest {
     @Autowired
     private PostRepository postRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private TokenRepository tokenRepository;
     Post post;
     User user;
 
@@ -29,7 +37,15 @@ public class PostRepositoryTest {
                 .password("testPassword")
                 .role(Role.USER)
                 .build();
-        post = new Post(1, "Header1", "Amazon", null, Base64.getDecoder().decode("gsttgggshssj"), user);
+        user = userRepository.save(user);
+        post = Post.builder()
+                .id(1)
+                .description("testDescription")
+                .header("testHeader")
+                .updateTime(LocalDateTime.of(2022, Month.AUGUST, 18, 8, 9, 2))
+                .image(new byte[]{})
+                .user(user)
+                .build();
         postRepository.save(post);
     }
 

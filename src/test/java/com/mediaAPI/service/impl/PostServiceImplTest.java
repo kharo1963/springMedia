@@ -8,34 +8,43 @@ import com.mediaAPI.repository.PostRepository;
 import com.mediaAPI.service.PostService;
 import com.mediaAPI.user.Role;
 import lombok.extern.slf4j.Slf4j;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @Slf4j
 class PostServiceImplTest {
 
     @Mock
-    private PostRepository postRepository;
-    @Mock
     private FriendshipRepository friendshipRepository;
     @Mock
     private AuthenticationService authenticationService;
+    @Mock
+    private PostRepository postRepository;
+
     private PostService postService;
     AutoCloseable autoCloseable;
     Post post;
     User user;
-    private Pageable page;
 
     @BeforeEach
     void setUp() {
@@ -48,8 +57,14 @@ class PostServiceImplTest {
                 .password("testPassword")
                 .role(Role.USER)
                 .build();
-        post = new Post(1,"Header1","Amazon", null, Base64.getDecoder().decode("gsttgggshssj"), user);
-        page = PageRequest.of(0, 20);
+        post = Post.builder()
+                .id(1)
+                .header("Header1")
+                .description("Amazon")
+                .updateTime(LocalDateTime.of(2022, Month.AUGUST, 18, 8, 9, 2))
+                .image(null)
+                .user(user)
+                .build();
     }
 
     @AfterEach
@@ -59,52 +74,54 @@ class PostServiceImplTest {
 
     @Test
     void create() throws IOException {
-        mock(Post.class);
-        mock(PostRepository.class);
-
-        when(postRepository.save(post)).thenReturn(post);
-        assertThat(postService.create(user, null, post.getHeader(), post.getDescription())).isEqualTo(true);
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+        Post createdPost = postService.create(user, null, post.getHeader(),  post.getDescription());
+        log.info("create:createdPost.getHeader() {}", createdPost.getHeader());
+        MatcherAssert.assertThat(createdPost.getId(), is(1));
+        MatcherAssert.assertThat(createdPost.getHeader(), is(post.getHeader()));
+        MatcherAssert.assertThat(createdPost.getDescription(), is(post.getDescription()));
     }
 
     @Test
     void readAll() {
-        mock(Post.class);
-        mock(PostRepository.class);
-
-        when(postRepository.findAll()).thenReturn(new ArrayList<Post>(
-                Collections.singleton(post)
-        ));
-
-        assertThat(postService.readAll(page).get(0).getDescription()).
-                isEqualTo(post.getDescription());
+        List<Post> posts = Collections.singletonList(post);
+        Page<Post> postPage = new PageImpl<>(posts);
+        Pageable page = PageRequest.of(0, 20);
+        when(postRepository.findAll(page))
+                .thenReturn(postPage);
+        List<Post> postList = postService.readAll(page);
+        log.info("readAll:postList {}", postList);
+        Post foundPost = postList.get(0);
+        assertThat(foundPost.getId(), is(post.getId()));
+        assertThat(foundPost.getHeader(), is(post.getHeader()));
+        assertThat(foundPost.getDescription(), is(post.getDescription()));
+        assertThat(foundPost.getUpdateTime(), is(post.getUpdateTime()));
     }
 
     @Test
     void read() {
-        mock(Post.class);
-        mock(PostRepository.class);
-
         when(postRepository.findById(1)).thenReturn(Optional.ofNullable(post));
-        assertThat(postService.read(1).getDescription())
-                .isEqualTo(post.getDescription());
+        Post readedPost = postService.read(1);
+        log.info("read:readedPost {}", readedPost);
+        assertThat(readedPost.getDescription(), is(post.getDescription()));
     }
 
     @Test
     void update()  throws IOException {
-        mock(Post.class);
-        mock(PostRepository.class);
-
-        when(postRepository.existsById(1)).thenReturn(true);
-        when(postRepository.save(post)).thenReturn(post);
-        assertThat(postService.update(user, post.getId(), null, post.getHeader(), post.getDescription())).isEqualTo(true);
+        when(postRepository.findById(1)).thenReturn(Optional.ofNullable(post));
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+        Post updatedPost = postService.update(user, post.getId(), null, post.getHeader(), post.getDescription());
+        log.info("update:updatedPos {}", updatedPost);
+        assertThat(updatedPost.getDescription(), is(post.getDescription()));
     }
+
 
     @Test
     void delete() {
-        mock(Post.class);
-        mock(PostRepository.class);
-
         when(postRepository.existsById(1)).thenReturn(true);
-        assertThat(postService.delete(user,1)).isEqualTo(true);
+        when(postRepository.findById(1)).thenReturn(Optional.ofNullable(post));
+        boolean isDeleted = postService.delete(user,1);
+        log.info("delete:isDeleted {}", isDeleted);
+        assertTrue(isDeleted, "Пост удален");
     }
 }

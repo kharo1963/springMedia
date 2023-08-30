@@ -1,12 +1,7 @@
 package com.mediaAPI.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.util.Collections;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediaAPI.auth.AuthenticationRequest;
@@ -20,7 +15,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
-
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -50,7 +44,6 @@ public class AuthenticationIntegrationTest {
     @AfterEach
     public void afterSetup() {
         log.info("@AfterEach");
-        //postRepository.deleteAll();
     }
 
     @Test
@@ -70,6 +63,8 @@ public class AuthenticationIntegrationTest {
         log.info("mediaAPIntegrationUtil.accessToken: {}", mediaAPIntegrationUtil.accessToken);
         mediaAPIntegrationUtil.refreshToken = response.getBody().getRefreshToken();
         log.info("mediaAPIntegrationUtil.refreshToken: {}", mediaAPIntegrationUtil.refreshToken);
+        assertFalse(mediaAPIntegrationUtil.accessToken.isEmpty());
+        assertFalse(mediaAPIntegrationUtil.refreshToken.isEmpty());
     }
 
     @Test
@@ -89,6 +84,8 @@ public class AuthenticationIntegrationTest {
         log.info("mediaAPIntegrationUtil.accessToken: {}", mediaAPIntegrationUtil.accessToken);
         mediaAPIntegrationUtil.refreshToken = response.getBody().getRefreshToken();
         log.info("mediaAPIntegrationUtil.refreshToken: {}", mediaAPIntegrationUtil.refreshToken);
+        assertFalse(mediaAPIntegrationUtil.accessToken.isEmpty());
+        assertFalse(mediaAPIntegrationUtil.refreshToken.isEmpty());
     }
 
     @Test
@@ -109,5 +106,7 @@ public class AuthenticationIntegrationTest {
         log.info("mediaAPIntegrationUtil.accessToken: {}", mediaAPIntegrationUtil.accessToken);
         mediaAPIntegrationUtil.refreshToken =  new ObjectMapper().readTree(response.getBody()).get("refresh_token").asText();
         log.info("mediaAPIntegrationUtil.refreshToken: {}", mediaAPIntegrationUtil.refreshToken);
+        assertFalse(mediaAPIntegrationUtil.accessToken.isEmpty());
+        assertFalse(mediaAPIntegrationUtil.refreshToken.isEmpty());
     }
 }

@@ -1,8 +1,5 @@
 package com.mediaAPI.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.mediaAPI.auth.AuthenticationService;
 import com.mediaAPI.model.Post;
 import com.mediaAPI.user.User;
@@ -10,7 +7,6 @@ import com.mediaAPI.service.PostService;
 import com.mediaAPI.config.JwtService;
 import com.mediaAPI.token.TokenRepository;
 import com.mediaAPI.user.Role;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,15 +21,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
-import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
@@ -41,10 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PostControllerTest {
 
     private MockMvc mvc;
-
     @Autowired
     private WebApplicationContext webApplicationContext;
-
     @MockBean
     private PostService postService;
     @MockBean
@@ -52,10 +45,9 @@ class PostControllerTest {
     @MockBean
     TokenRepository tokenRepository;
     @MockBean
-    AuthenticationService service;
+    AuthenticationService authenticationService;
 
-    Post postOne;
-    Post postTwo;
+    Post post;
     User user;
     List<Post> postList= new ArrayList<>();
     private Pageable page;
@@ -69,48 +61,61 @@ class PostControllerTest {
                 .password("testPassword")
                 .role(Role.USER)
                 .build();
-        postOne = new Post(1, "Header1","Amazon", null, Base64.getDecoder().decode("gsttgggshssj"), user);
-        postTwo = new Post(2, "Header2","Amazon", null, Base64.getDecoder().decode("uiwiwwi"), user);
-        postList.add(postOne);
-        postList.add(postTwo);
+        post = Post.builder()
+                .id(1)
+                .header("Header1")
+                .description("Amazon")
+                .updateTime(LocalDateTime.of(2022, Month.AUGUST, 18, 8, 9, 2))
+                .image(null)
+                .user(user)
+                .build();
+        postList.add(post);
         page = PageRequest.of(0, 20);
     }
 
-    @AfterEach
-    void tearDown() {
+    @Test
+    void testCreate() throws Exception {
+        when(authenticationService.getCurrentUser()).thenReturn(user);
+        when(postService.create(user, null, post.getHeader(), post.getDescription())).thenReturn(post);
+        mvc.perform(post("/posts")
+                        .param("header", post.getHeader())
+                        .param("description", post.getDescription())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print()).andExpect(status().isCreated());
     }
 
     @Test
-    void create() {
-    }
-
-    @Test
-    void readAll() throws Exception {
+    void testReadAll() throws Exception {
+        when(authenticationService.getCurrentUser()).thenReturn(user);
         when(postService.readAll(page)).thenReturn(postList);
         this.mvc.perform(get("/posts"))
                 .andDo(print()).andExpect(status().isOk());
     }
 
     @Test
-    void read() {
+    void testRead()  throws Exception {
+        when(authenticationService.getCurrentUser()).thenReturn(user);
+        when(postService.read(1)).thenReturn(post);
+        mvc.perform(get("/posts/1"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void update() throws Exception {
-        when(postService.update(user, postOne.getId(), null, postOne.getHeader(), postOne.getDescription())).thenReturn(postOne);
-
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        ObjectWriter ow = mapper.writer().withDefaultPrettyPrinter();
-        String requestJson = ow.writeValueAsString(postOne);
+    void teatUpdate() throws Exception {
+        when(authenticationService.getCurrentUser()).thenReturn(user);
+        when(postService.update(user, post.getId(), null, post.getHeader(), post.getDescription())).thenReturn(post);
         mvc.perform(put("/posts/" + 1)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                .param("header", post.getHeader())
+                .param("description", post.getDescription())
+                .accept(MediaType.APPLICATION_JSON))
                 .andDo(print()).andExpect(status().isOk());
     }
 
     @Test
-    void delete() {
+    void testDelete() throws Exception {
+        when(authenticationService.getCurrentUser()).thenReturn(user);
+        when(postService.delete(user, 1)).thenReturn(true);
+        mvc.perform(delete("/posts/1"))
+                .andExpect(status().isOk());
     }
 }

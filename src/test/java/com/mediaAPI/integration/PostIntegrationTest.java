@@ -1,12 +1,8 @@
 package com.mediaAPI.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -64,7 +60,6 @@ public class PostIntegrationTest {
     @AfterEach
     public void afterSetup() {
         log.info("@AfterEach");
-        //postRepository.deleteAll();
     }
 
     @Test
@@ -84,6 +79,8 @@ public class PostIntegrationTest {
         log.info("mediaAPIntegrationUtil.accessToken: {}", mediaAPIntegrationUtil.accessToken);
         mediaAPIntegrationUtil.refreshToken = response.getBody().getRefreshToken();
         log.info("mediaAPIntegrationUtil.refreshToken: {}", mediaAPIntegrationUtil.refreshToken);
+        assertFalse(mediaAPIntegrationUtil.accessToken.isEmpty());
+        assertFalse(mediaAPIntegrationUtil.refreshToken.isEmpty());
     }
     @Test
     @Order(2)
@@ -100,13 +97,15 @@ public class PostIntegrationTest {
         log.info("testAuthenticationControllerRegister response: {}", response);
         mediaAPIntegrationUtil.accessTokenReceiver = response.getBody().getAccessToken();
         log.info("mediaAPIntegrationUtilReceiver.accessTokenReceiver: {}", mediaAPIntegrationUtil.accessTokenReceiver);
-        mediaAPIntegrationUtil.refreshTokenReceiver = response.getBody().getAccessToken();
+        mediaAPIntegrationUtil.refreshTokenReceiver = response.getBody().getRefreshToken();
         log.info("mediaAPIntegrationUtilReceiver.refreshTokenReceiver: {}", mediaAPIntegrationUtil.refreshTokenReceiver);
+        assertFalse(mediaAPIntegrationUtil.accessTokenReceiver.isEmpty());
+        assertFalse(mediaAPIntegrationUtil.refreshTokenReceiver.isEmpty());
     }
 
     @Test
     @Order(3)
-    void testFriendshipControllerСreate() throws IOException {
+    void testFriendshipControllerCreate() {
         String url = baseUrl + "/friendships";
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("receiver_id", testReceiver.getId());
@@ -114,18 +113,19 @@ public class PostIntegrationTest {
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         headers.add("Authorization", "Bearer "+ mediaAPIntegrationUtil.accessToken);
         log.info("testFriendshipControllerСreate headers: {}", headers);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Friendship> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.POST,
                 new HttpEntity<>("", headers),
-                String.class
+                Friendship.class
         );
         log.info("testFriendshipControllerСreate response: {}", response);
+        assertNotNull(response.getBody());
     }
 
     @Test
     @Order(4)
-    void testFriendshipControllerUpdate() throws IOException {
+    void testFriendshipControllerUpdate() {
         String url = baseUrl + "/friendships/" + testFriendship.getId();
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("receiver_id", testReceiver.getId())
@@ -134,18 +134,19 @@ public class PostIntegrationTest {
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         headers.add("Authorization", "Bearer "+ mediaAPIntegrationUtil.accessTokenReceiver);
         log.info("testFriendshipControllerUpdate headers: {}", headers);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Friendship> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.PUT,
                 new HttpEntity<>("", headers),
-                String.class
+                Friendship.class
         );
         log.info("testFriendshipControllerUpdate response: {}", response);
+        assertNotNull(response.getBody());
     }
 
     @Test
     @Order(5)
-    void testPostControllerСreate() throws IOException {
+    void testPostControllerCreate() {
         String url = baseUrl + "/posts";
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("header", testPost.getHeader())
@@ -161,18 +162,19 @@ public class PostIntegrationTest {
         body.add("image", new FileSystemResource(file));
         HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(body, headers);
         log.info("testPostControllerСreate httpEntity: {}", httpEntity);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Post> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.POST,
                 httpEntity,
-                String.class
+                Post.class
         );
         log.info("testPostControllerСreate response: {}", response);
+        assertNotNull(response.getBody());
     }
 
     @Test
     @Order(6)
-    void testPostControllerСreateReceiver() throws IOException {
+    void testPostControllerCreateReceiver() {
         String url = baseUrl + "/posts";
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("header", testPost.getHeader())
@@ -188,18 +190,19 @@ public class PostIntegrationTest {
         body.add("image", new FileSystemResource(file));
         HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(body, headers);
         log.info("testPostControllerСreateReceiver httpEntity: {}", httpEntity);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Post> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.POST,
                 httpEntity,
-                String.class
+                Post.class
         );
         log.info("testPostControllerСreate response: {}", response);
+        assertNotNull(response.getBody());
     }
 
     @Test
     @Order(7)
-    void testPostControllerReadAll() throws IOException {
+    void testPostControllerReadAll()  {
         String url = baseUrl + "/posts";
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("from", 0)
@@ -215,28 +218,30 @@ public class PostIntegrationTest {
                 String.class
         );
         log.info("testPostControllerReadAll response: {}", response);
+        assertFalse(response.getBody().isEmpty());
     }
 
     @Test
     @Order(8)
-    void testPostControllerRead() throws IOException {
+    void testPostControllerRead() {
         String url = baseUrl + "/posts/" + testPost.getId();
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         headers.add("Authorization", "Bearer "+ mediaAPIntegrationUtil.accessToken);
         log.info("testPostControllerRead headers: {}", headers);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Post> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,
                 new HttpEntity<>("", headers),
-                String.class
+                Post.class
         );
         log.info("testPostControllerRead response: {}", response);
+        assertNotNull(response.getBody());
     }
 
     @Test
     @Order(9)
-    void testPostControllerReadSubscription() throws IOException {
+    void testPostControllerReadSubscription() {
         String url = baseUrl + "/posts/subscriptions";
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("from", 0)
@@ -252,11 +257,12 @@ public class PostIntegrationTest {
                 String.class
         );
         log.info("testPostControllerReadAll response: {}", response);
+        assertFalse(response.getBody().isEmpty());
     }
 
     @Test
     @Order(10)
-    void testPostControllerUpdate() throws IOException {
+    void testPostControllerUpdate() {
         String url = baseUrl + "/posts/" + testPost.getId();
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("header", testPost.getHeader() + "u")
@@ -272,18 +278,19 @@ public class PostIntegrationTest {
         body.add("image", new FileSystemResource(file));
         HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(body, headers);
         log.info("testPostControllerUpdate httpEntity: {}", httpEntity);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Post> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.PUT,
                 httpEntity,
-                String.class
+                Post.class
         );
         log.info("testPostControllerUpdate response: {}", response);
+        assertNotNull(response.getBody());
     }
 
     @Test
     @Order(11)
-    void testPostControllerDelete() throws IOException {
+    void testPostControllerDelete() {
         String url = baseUrl + "/posts/" + testPost.getId();
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -296,6 +303,7 @@ public class PostIntegrationTest {
                 String.class
         );
         log.info("testPostControllerDelete response: {}", response);
+        assertEquals(response.getStatusCode(), HttpStatus.OK);
     }
 }
 

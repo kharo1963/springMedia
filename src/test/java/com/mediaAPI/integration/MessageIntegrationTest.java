@@ -1,16 +1,12 @@
 package com.mediaAPI.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.util.Collections;
-
 import com.mediaAPI.auth.AuthenticationResponse;
 import com.mediaAPI.auth.RegisterRequest;
 import com.mediaAPI.model.Friendship;
+import com.mediaAPI.model.Message;
 import com.mediaAPI.model.RequestStatus;
 import com.mediaAPI.user.User;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +16,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
-
 import com.mediaAPI.model.Post;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -58,7 +53,6 @@ public class MessageIntegrationTest {
     @AfterEach
     public void afterSetup() {
         log.info("@AfterEach");
-        //postRepository.deleteAll();
     }
 
     @Test
@@ -78,6 +72,8 @@ public class MessageIntegrationTest {
         log.info("mediaAPIntegrationUtil.accessToken: {}", mediaAPIntegrationUtil.accessToken);
         mediaAPIntegrationUtil.refreshToken = response.getBody().getRefreshToken();
         log.info("mediaAPIntegrationUtil.refreshToken: {}", mediaAPIntegrationUtil.refreshToken);
+        assertFalse(mediaAPIntegrationUtil.accessToken.isEmpty());
+        assertFalse(mediaAPIntegrationUtil.refreshToken.isEmpty());
     }
 
     @Test
@@ -95,13 +91,15 @@ public class MessageIntegrationTest {
         log.info("testAuthenticationControllerRegister response: {}", response);
         mediaAPIntegrationUtil.accessTokenReceiver = response.getBody().getAccessToken();
         log.info("mediaAPIntegrationUtilReceiver.accessTokenReceiver: {}", mediaAPIntegrationUtil.accessTokenReceiver);
-        mediaAPIntegrationUtil.refreshTokenReceiver = response.getBody().getAccessToken();
+        mediaAPIntegrationUtil.refreshTokenReceiver = response.getBody().getRefreshToken();
         log.info("mediaAPIntegrationUtilReceiver.refreshTokenReceiver: {}", mediaAPIntegrationUtil.refreshTokenReceiver);
+        assertFalse(mediaAPIntegrationUtil.accessTokenReceiver.isEmpty());
+        assertFalse(mediaAPIntegrationUtil.refreshTokenReceiver.isEmpty());
     }
 
     @Test
     @Order(3)
-    void testFriendshipControllerСreate() throws IOException {
+    void testFriendshipControllerCreate() {
         String url = baseUrl + "/friendships";
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("receiver_id", testReceiver.getId());
@@ -109,18 +107,19 @@ public class MessageIntegrationTest {
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         headers.add("Authorization", "Bearer "+ mediaAPIntegrationUtil.accessToken);
         log.info("testFriendshipControllerСreate headers: {}", headers);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Friendship> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.POST,
                 new HttpEntity<>("", headers),
-                String.class
+                Friendship.class
         );
         log.info("testFriendshipControllerСreate response: {}", response);
+        assertEquals(response.getStatusCode(), HttpStatus.CREATED);
     }
 
     @Test
     @Order(4)
-    void testFriendshipControllerUpdate() throws IOException {
+    void testFriendshipControllerUpdate() {
         String url = baseUrl + "/friendships/" + testFriendship.getId();
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("receiver_id", testReceiver.getId())
@@ -129,18 +128,19 @@ public class MessageIntegrationTest {
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         headers.add("Authorization", "Bearer "+ mediaAPIntegrationUtil.accessTokenReceiver);
         log.info("testFriendshipControllerUpdate headers: {}", headers);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Friendship> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.PUT,
                 new HttpEntity<>("", headers),
-                String.class
+                Friendship.class
         );
         log.info("testFriendshipControllerUpdate response: {}", response);
+        assertNotNull(response.getBody());
     }
 
     @Test
     @Order(5)
-    void testMessageControllerСreate() throws IOException {
+    void testMessageControllerCreate() {
         String url = baseUrl + "/messages";
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url)
                 .queryParam("receiver_id", testReceiver.getId())
@@ -149,18 +149,19 @@ public class MessageIntegrationTest {
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         headers.add("Authorization", "Bearer "+ mediaAPIntegrationUtil.accessToken);
         log.info("testMessageControllerСreate headers: {}", headers);
-        ResponseEntity<String> response = restTemplate.exchange(
+        ResponseEntity<Message> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.POST,
                 new HttpEntity<>("", headers),
-                String.class
+                Message.class
         );
         log.info("testMessageControllerСreate response: {}", response);
+        assertEquals(response.getStatusCode(), HttpStatus.CREATED);
     }
 
     @Test
     @Order(6)
-    void testMessageControllerReadAll() throws IOException {
+    void testMessageControllerReadAll() {
         String url = baseUrl + "/messages/" + "2";;
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -173,5 +174,6 @@ public class MessageIntegrationTest {
                 String.class
         );
         log.info("testMessageControllerReadAll response: {}", response);
+        assertFalse(response.getBody().isEmpty());
     }
 }
